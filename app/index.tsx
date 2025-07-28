@@ -1,28 +1,101 @@
-import { DrawerToggleButton } from "@react-navigation/drawer";
-import { DrawerActions } from "@react-navigation/native";
-import { Stack, useNavigation } from "expo-router";
-import { Button, View } from "react-native";
+import { useRef } from "react";
+import Animated, {
+  interpolate,
+  useAnimatedRef,
+  useAnimatedStyle,
+  useScrollViewOffset,
+} from "react-native-reanimated";
+import {
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { Stack } from "expo-router";
+
+const { width } = Dimensions.get("window");
+
+const IMG_HEIGHT = 300;
 
 export default function Index() {
-  const navigation = useNavigation();
+  const scrollRef = useAnimatedRef<Animated.ScrollView>();
+  const scrollOfset = useScrollViewOffset(scrollRef);
+
+  const imageAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        {
+          translateY: interpolate(
+            scrollOfset.value,
+            [-IMG_HEIGHT, 0, IMG_HEIGHT],
+            [-IMG_HEIGHT / 2, 0, IMG_HEIGHT * 0.75]
+          ),
+        },
+        {
+          scale: interpolate(
+            scrollOfset.value,
+            [-IMG_HEIGHT, 0, IMG_HEIGHT],
+            [2, 1, 1]
+          ),
+        },
+      ],
+    };
+  });
+
+  const headerAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: interpolate(scrollOfset.value, [0, IMG_HEIGHT / 1.5], [0, 1]),
+    };
+  });
+
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
+    <View>
       <Stack.Screen
         options={{
-          headerRight: () => <DrawerToggleButton />,
+          headerTransparent: true,
+          headerLeft: () => <Text>Back</Text>,
+          headerBackground: () => (
+            <Animated.View style={[styles.header, headerAnimatedStyle]} />
+          ),
         }}
       />
-
-      <Button
-        title="Toggle Drawer"
-        onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
-      />
+      <Animated.ScrollView ref={scrollRef} scrollEventThrottle={16}>
+        <Animated.Image
+          source={{
+            uri: "https://images.unsplash.com/photo-1603302576837-37561b2e2302",
+          }}
+          style={[styles.image, imageAnimatedStyle]}
+        />
+        <View style={{ height: 2000, backgroundColor: "#FFFF" }}>
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: "bold",
+              textAlign: "center",
+              marginTop: 15,
+            }}
+          >
+            Parallax Scroll
+          </Text>
+        </View>
+      </Animated.ScrollView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#ffff",
+  },
+  image: {
+    width: width,
+    height: IMG_HEIGHT,
+  },
+  header: {
+    backgroundColor: "#ffff",
+    height: 100,
+  },
+});
